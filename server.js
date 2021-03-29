@@ -1,15 +1,18 @@
 'use strict';
-const PORT = 3000;
+require('dotenv').config(); //this bakege is dawnloaded by terminal (run npm i dotenv )then add this line to able run env / must be in the top 
+// const PORT = 3000;//without API 
+const PORT = process.env.PORT; //with API / in this case , process.env to go inside file , PORT  is somthing inside , so the same as  const PORT = 3000 , but more daynamic // env had secrite data , will not push , this line must but it in the top  
 
 const express = require('express');
+const superagent = require('superagent');
 const cors = require('cors');
 const app = express();
 app.use(cors());
-
+// Load Environment Variables from the .env file / get any data req from .env file 
 // all lines code above , as role for server 
 // Create a route with a method of `get` and a path of `/location`
 app.get('/location', handleLocation);
-app.get('/weather', handleWeather);
+// app.get('/weather', handleWeather);
 
 function LocationObject(search_query, formatted_query, latitude, longitude) {
     this.search_query = search_query;
@@ -25,16 +28,22 @@ function WeatherObjects(forecast, time) {
 }
 
 function handleLocation(request, response) {
-    /*. The route callback should invoke a function to convert the search query to a latitude and longitude. The function should use the provided JSON data. */
-    // 1. get from json file
-    const getLocation = require('./data/location.json');
-    let location = request.query.location; // if user Input : Amman , so  location =amman 
-    //request is an objecat on system (build In)and have so many method , one of these metohds is query , requset from front end , that is input from the user 
 
-    console.log(request.query);
-    let NewObjext = new LocationObject(getLocation[0].type, getLocation[0].display_name, getLocation[0].lat, getLocation[0].lon)
-    console.log(NewObjext)
-    response.send(NewObjext);
+    // 1. get from json file or request from API
+    // const getLocation = require('./data/location.json');
+
+    let location = request.query.location; // if user Input : Amman , so  location =amman 
+    //request is an objecat on system (build In)and have so many method , one of these metohds is query , requset from front end , that is input from the user
+    let key = process.env.GEOCODE_API_KEY;
+    //get data from the server 
+    const url = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${location}&format=json`;
+    //to help me to connect with another server (superagent )
+    superagent.get(url).then(dataServer => {
+        // console.log(dataServer.body[0]);
+        let locationResponse = dataServer.body[1]
+        console.log(locationResponse);
+    })
+    response.send(locationResponse);
 }
 
 function handleWeather(requset, response) {
@@ -50,23 +59,3 @@ function handleWeather(requset, response) {
 
 }
 app.listen(PORT, () => console.log(`app is runing in ${PORT} and the city is `));
-
-/* **Given** that a user does not enter a valid location (eg: empty string) in the input
-
-**When** the user clicks the "Explore!" button
-
-**Then** the user will receive an error message on the page and the data will not be rendered properly
-
-Endpoints:
-`/location`, `/weather`
-
-Example Response:
-
-```
-{
-  status: 500,
-  responseText: "Sorry, something went wrong",
-  ...
-}
-```
-*/
