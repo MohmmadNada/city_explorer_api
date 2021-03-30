@@ -13,49 +13,88 @@ app.use(cors());
 // Create a route with a method of `get` and a path of `/location`
 app.get('/location', handleLocation);
 // app.get('/weather', handleWeather);
+//in case /abcd , this page not found , code for not found , this line must be add after all app.get , this must be from express , but to practice 
+app.use('*', notFoundHandler)
 
-function LocationObject(search_query, formatted_query, latitude, longitude) {
-    this.search_query = search_query;
-    this.formatted_query = formatted_query;
-    this.latitude = latitude;
-    this.longitude = longitude;
+function notFoundHandler(request, response) {
+    response.status(404).send('requst doesnt response');
 }
+
+function LocationObject(search_query, geoAPIs) {
+    this.search_query = search_query;
+    this.formatted_query = geoAPIs[0].display_name;
+    this.latitude = geoAPIs[0].lat;
+    this.longitude = geoAPIs[0].lon;
+}
+
+let weatherArr = [];
 
 function WeatherObjects(forecast, time) {
-
     this.forecast = forecast;
     this.time = time;
+    weatherArr.push(this);
+
 }
+//save it locally (caching locallyin variable)
+const myLocalLocations = {}
+console.log(myLocalLocations);
 
 function handleLocation(request, response) {
-
+    //data input from user 
+    let city = request.query.city;
     // 1. get from json file or request from API
     // const getLocation = require('./data/location.json');
+    if (myLocalLocations[city]) {
+        console.log('fron local data');
+        response.send(myLocalLocations[city])
+    } else {
+        let key = process.env.GEOCODE_API_KEY;
+        //get data from the server 
+        const url = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`;
+        //to help me to connect with another server (superagent )
+        // if (myLocalLocations[city]) {
+        // console.log('from local data');
+        // response.send(myLocalLocations[city]);
+        // } else {
+        console.log('from APIs data');
+        superagent.get(url).then(dataServer => {
+            let locationNew = new LocationObject(city, dataServer.body);
 
-    let location = request.query.location; // if user Input : Amman , so  location =amman 
-    //request is an objecat on system (build In)and have so many method , one of these metohds is query , requset from front end , that is input from the user
-    let key = process.env.GEOCODE_API_KEY;
-    //get data from the server 
-    const url = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${location}&format=json`;
-    //to help me to connect with another server (superagent )
-    superagent.get(url).then(dataServer => {
-        // console.log(dataServer.body[0]);
-        let locationResponse = dataServer.body[1]
-        console.log(locationResponse);
-    })
-    response.send(locationResponse);
+            // console.log('new object -->', locationNew);
+
+            response.send(locationNew);
+        }).catch((err) => {
+            console.log('we have error from API');
+            console.log(err);
+        })
+    }
+    console.log('new object -->', locationNew);
+
+    //then run in succes case 
+    //in case we have error in link server(url) catch will run
+    console.log(myLocalLocations);
+
 }
 
 function handleWeather(requset, response) {
-    const getWeatherData = require('./data/weather.json');
-    const weatherArr = []
-    getWeatherData.data.forEach(element => {
+    // let city = request.query.city;
+    let keyWeather = process.env.WEATHER_API_KEY;
+    let url = `https://api.weatherbit.io/v2.0/forecast/daily?&lat=${locationNew.latitude}&lon=${locationNew.latitude}&key=${keyWeather}`;
+    superagent.get(url).then(responseServer => {
+        console.log(responseServer);
+        // let dataObj = responseServer.body;
+        // console.log('weather data = ', dataObj)
+        // dataObj.data.map(element => {
+        //     let time = element.valid_date;
+        //     let dis = element.weather.description;
+        //     let newDay = new Weathers(dis, time);
 
-        let newWeather = new WeatherObjects(element.weather.description, element.valid_date);
-        weatherArr.push(newWeather);
-        return weatherArr;
-    })
-    response.send(weatherArr);
-
+    });
+    // response.send(weatherArr);
 }
+
+
+// }
 app.listen(PORT, () => console.log(`app is runing in ${PORT} and the city is `));
+
+//note : local data didnt work , i need to add any new data for the myLocalLocations
