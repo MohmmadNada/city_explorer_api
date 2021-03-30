@@ -12,7 +12,7 @@ app.use(cors());
 // all lines code above , as role for server 
 // Create a route with a method of `get` and a path of `/location`
 app.get('/location', handleLocation);
-// app.get('/weather', handleWeather);
+app.get('/weather', handleWeather);
 //in case /abcd , this page not found , code for not found , this line must be add after all app.get , this must be from express , but to practice 
 app.use('*', notFoundHandler)
 
@@ -58,8 +58,11 @@ function handleLocation(request, response) {
         console.log('from APIs data');
         superagent.get(url).then(dataServer => {
             let locationNew = new LocationObject(city, dataServer.body);
-            myLocalLocations[locationNew];
-            console.log('new object -->', locationNew);
+            myLocalLocations[city] = new LocationObject(city, dataServer.body);
+            // console.log('new object -->', locationNew);
+            // console.log('all objects not empty:', myLocalLocations);
+
+            // console.log('data lon is', myLocalLocations[city].latitude);
             response.send(locationNew);
         }).catch((err) => {
             console.log('we have error from API');
@@ -71,9 +74,9 @@ function handleLocation(request, response) {
 }
 
 function handleWeather(requset, response) {
-    // let city = request.query.city;
+    let city = request.query.city;
     let keyWeather = process.env.WEATHER_API_KEY;
-    let url = `https://api.weatherbit.io/v2.0/forecast/daily?&lat=${locationNew.latitude}&lon=${locationNew.latitude}&key=${keyWeather}`;
+    let url = `https://api.weatherbit.io/v2.0/forecast/daily?&lat=${myLocalLocations[city].latitude}&lon=${myLocalLocations[city].longitude}&key=${keyWeather}`;
     superagent.get(url).then(responseServer => {
         console.log(responseServer);
         // let dataObj = responseServer.body;
@@ -84,7 +87,7 @@ function handleWeather(requset, response) {
         //     let newDay = new Weathers(dis, time);
 
     });
-    // response.send(weatherArr);
+    response.send(weatherArr);
 }
 
 
