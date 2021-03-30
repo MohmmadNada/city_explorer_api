@@ -36,8 +36,7 @@ function WeatherObjects(forecast, time) {
 
 }
 //save it locally (caching locallyin variable)
-const myLocalLocations = {}
-console.log(myLocalLocations);
+let myLocalLocations = {}
 
 function handleLocation(request, response) {
     //data input from user 
@@ -59,21 +58,16 @@ function handleLocation(request, response) {
         console.log('from APIs data');
         superagent.get(url).then(dataServer => {
             let locationNew = new LocationObject(city, dataServer.body);
-
-            // console.log('new object -->', locationNew);
-
+            myLocalLocations[locationNew];
+            console.log('new object -->', locationNew);
             response.send(locationNew);
         }).catch((err) => {
             console.log('we have error from API');
             console.log(err);
         })
     }
-    console.log('new object -->', locationNew);
-
     //then run in succes case 
     //in case we have error in link server(url) catch will run
-    console.log(myLocalLocations);
-
 }
 
 function handleWeather(requset, response) {
