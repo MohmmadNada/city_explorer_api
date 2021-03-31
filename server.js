@@ -13,6 +13,8 @@ app.use(cors());
 // Create a route with a method of `get` and a path of `/location`
 app.get('/location', handleLocation);
 app.get('/weather', handleWeather);
+app.get('/parks', handleParks);
+
 //in case /abcd , this page not found , code for not found , this line must be add after all app.get , this must be from express , but to practice 
 app.use('*', notFoundHandler)
 
@@ -73,25 +75,56 @@ function handleLocation(request, response) {
     //in case we have error in link server(url) catch will run
 }
 
-function handleWeather(requset, response) {
-    let city = request.query.city;
+function handleWeather(request, response) {
+    // let search_query = request.query.search_query;
     let keyWeather = process.env.WEATHER_API_KEY;
-    let url = `https://api.weatherbit.io/v2.0/forecast/daily?&lat=${myLocalLocations[city].latitude}&lon=${myLocalLocations[city].longitude}&key=${keyWeather}`;
-    superagent.get(url).then(responseServer => {
-        console.log(responseServer);
-        // let dataObj = responseServer.body;
-        // console.log('weather data = ', dataObj)
-        // dataObj.data.map(element => {
-        //     let time = element.valid_date;
-        //     let dis = element.weather.description;
-        //     let newDay = new Weathers(dis, time);
+    let url = `https://api.weatherbit.io/v2.0/forecast/daily?&lat=${request.query.latitude}&lon=${request.query.longitude}&key=${keyWeather}`;
+    superagent.get(url).then(dataServer => {
+        let cityWeather = dataServer.body.data;
+        cityWeather.map(element => {
+            let time = element.valid_date;
+            let dis = element.weather.description;
+            let newWeather = new WeatherObjects(dis, time);
+            // console.log('weather data = ', weatherArr)
+        });
+        response.send(weatherArr);
+    })
 
-    });
-    response.send(weatherArr);
+
 }
 
+let allParksObj = [];
 
-// }
+function ParksObjects(name, address, fee, description, url) {
+    this.name = name;
+    this.address = address;
+    this.fee = fee;
+    this.description = description;
+    this.url = url;
+    allParksObj.push(this);
+}
+
+function handleParks(request, response) {
+    let city = request.query.search_query;
+    let keyParks = process.env.PARKS_API_KEY;
+    let url = `https://developer.nps.gov/api/v1/parks?q=${city}&api_key=${keyParks}`
+    superagent.get(url).then(severData => {
+        severData.body.data.map(element => {
+            let name = element.fullName;
+            let addresses = element.addresses[0].line1;
+            let fees;
+            if (element.fees.length == 0) {
+                fees = 'no fees, free '
+            } else { fees = element.fees[0] }
+            let description = element.description;
+            let url = element.url;
+            let newParksObject = new ParksObjects(name, addresses, fees, description, url)
+        })
+        response.send(allParksObj.slice(0, 10));
+        // console.log(allParksObj);
+    })
+
+}
 app.listen(PORT, () => console.log(`app is runing in ${PORT} and the city is `));
 
 //note : local data didnt work , i need to add any new data for the myLocalLocations
